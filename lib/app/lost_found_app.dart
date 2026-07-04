@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../features/lost_found/data/lost_found_repository.dart';
 import '../features/lost_found/views/lost_found_home_page.dart';
@@ -19,6 +20,7 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: colorScheme,
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(),
         scaffoldBackgroundColor: const Color(0xFFF6F7F4),
         appBarTheme: AppBarTheme(
           backgroundColor: colorScheme.surface,

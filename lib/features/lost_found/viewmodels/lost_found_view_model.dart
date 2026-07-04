@@ -211,6 +211,15 @@ class LostFoundViewModel extends ChangeNotifier {
     return updated;
   }
 
+  void deleteReport(String id) {
+    _items = [for (final item in _items) if (item.id != id) item];
+    if (_selectedItemId == id) {
+      _selectedItemId = null;
+    }
+    _syncSelection();
+    notifyListeners();
+  }
+
   void _syncSelection() {
     final filtered = filteredItems;
     if (filtered.isEmpty) {

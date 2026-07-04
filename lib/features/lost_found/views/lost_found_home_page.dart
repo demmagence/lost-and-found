@@ -181,6 +181,9 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                                         }
                                       },
                                       onEdit: _openEditSheet,
+                                      onDelete: (deletedItem) {
+                                        _viewModel.deleteReport(deletedItem.id);
+                                      },
                                     ),
                                   ),
                                 ],
@@ -396,6 +399,10 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                    onEdit: (editedItem) {
                      Navigator.of(context).pop();
                      _openEditSheet(editedItem);
+                   },
+                   onDelete: (deletedItem) {
+                     Navigator.of(context).pop();
+                     _viewModel.deleteReport(deletedItem.id);
                    },
                  ),
               ),

@@ -27,7 +27,7 @@ class ItemDetailPanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: scheme.outlineVariant),
+          border: compact ? null : Border.all(color: scheme.outlineVariant),
         ),
         child: Center(
           child: Column(
@@ -62,7 +62,7 @@ class ItemDetailPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: scheme.outlineVariant),
+        border: compact ? null : Border.all(color: scheme.outlineVariant),
       ),
       child: SingleChildScrollView(
         padding: EdgeInsets.all(compact ? 16 : 20),
@@ -96,7 +96,7 @@ class ItemDetailPanel extends StatelessWidget {
               children: [
                 for (final status in ItemStatus.values)
                   if (status != item.status)
-                    OutlinedButton.icon(
+                    FilledButton.tonalIcon(
                       key: ValueKey('status-${status.name}'),
                       onPressed: () => onStatusChanged(status),
                       icon: Icon(status.icon, size: 18),

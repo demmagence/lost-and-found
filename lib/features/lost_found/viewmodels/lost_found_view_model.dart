@@ -169,7 +169,6 @@ class LostFoundViewModel extends ChangeNotifier {
     _items = [created, ..._items];
     _selectedItemId = created.id;
     _query = '';
-    _typeFilter = null;
     _statusFilter = null;
     notifyListeners();
 

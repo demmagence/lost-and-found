@@ -69,7 +69,11 @@ class _ReportDialogState extends State<ReportDialog> {
               ),
             ),
             Text(
-              'Tambah laporan baru',
+              switch (widget.fixedType) {
+                ItemType.found => 'Tambah laporan ditemukan',
+                ItemType.lost => 'Tambah laporan hilang',
+                null => 'Tambah laporan baru',
+              },
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -222,8 +226,7 @@ class _ReportDialogState extends State<ReportDialog> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   String? _requiredValidator(String? value) {

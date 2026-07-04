@@ -1,4 +1,4 @@
-package com.example.lost_and_found
+package com.demma.lostandfound
 
 import io.flutter.embedding.android.FlutterActivity
 

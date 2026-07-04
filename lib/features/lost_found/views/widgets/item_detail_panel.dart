@@ -11,12 +11,14 @@ class ItemDetailPanel extends StatelessWidget {
     required this.item,
     required this.onStatusChanged,
     required this.onEdit,
+    required this.onDelete,
     this.compact = false,
   });
 
   final LostFoundItem? item;
   final ValueChanged<ItemStatus> onStatusChanged;
   final ValueChanged<LostFoundItem> onEdit;
+  final ValueChanged<LostFoundItem> onDelete;
   final bool compact;
 
   @override
@@ -96,6 +98,15 @@ class ItemDetailPanel extends StatelessWidget {
                   onPressed: () => onEdit(item),
                   tooltip: 'Edit Laporan',
                 ),
+                IconButton(
+                  key: const ValueKey('deleteReportButton'),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  onPressed: () => _confirmDelete(context, item),
+                  tooltip: 'Hapus Laporan',
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -147,6 +158,40 @@ class ItemDetailPanel extends StatelessWidget {
             _ActivityTimeline(activities: item.activities),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, LostFoundItem item) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(
+          Icons.delete_outline,
+          color: Theme.of(ctx).colorScheme.error,
+        ),
+        title: const Text('Hapus Laporan?'),
+        content: Text(
+          'Laporan "${item.title}" akan dihapus secara permanen dan tidak dapat dikembalikan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            key: const ValueKey('confirmDeleteButton'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              onDelete(item);
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
       ),
     );
   }

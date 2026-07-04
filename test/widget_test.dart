@@ -221,4 +221,35 @@ void main() {
     ), findsOneWidget);
     expect(find.text('Laporan diperbarui'), findsOneWidget);
   });
+
+  testWidgets('delete report flow removes item from list', (tester) async {
+    await pumpLostFoundApp(tester);
+
+    // Confirm the item exists in the detail panel
+    expect(find.descendant(
+      of: find.byKey(const ValueKey('detailPanel')),
+      matching: find.text('Laptop Lenovo ThinkPad'),
+    ), findsOneWidget);
+
+    // Tap delete button
+    await tester.tap(find.byKey(const ValueKey('deleteReportButton')));
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog appears
+    expect(find.text('Hapus Laporan?'), findsOneWidget);
+
+    // Tap 'Batal' — item should NOT be deleted
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Laptop Lenovo ThinkPad'), findsWidgets);
+
+    // Open confirm dialog again and tap 'Hapus'
+    await tester.tap(find.byKey(const ValueKey('deleteReportButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirmDeleteButton')));
+    await tester.pumpAndSettle();
+
+    // Verify item is removed from both the list and detail panel
+    expect(find.text('Laptop Lenovo ThinkPad'), findsNothing);
+  });
 }

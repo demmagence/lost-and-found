@@ -180,6 +180,7 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                                           );
                                         }
                                       },
+                                      onEdit: _openEditSheet,
                                     ),
                                   ),
                                 ],
@@ -392,6 +393,10 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                    onStatusChanged: (status) {
                      _viewModel.changeStatus(sheetItem.id, status);
                    },
+                   onEdit: (editedItem) {
+                     Navigator.of(context).pop();
+                     _openEditSheet(editedItem);
+                   },
                  ),
               ),
             );
@@ -421,6 +426,21 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
 
     _viewModel.addReport(draft);
     _searchController.clear();
+  }
+
+  Future<void> _openEditSheet(LostFoundItem item) async {
+    final draft = await showModalBottomSheet<ReportDraft>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ReportDialog(initialItem: item),
+    );
+
+    if (draft == null) {
+      return;
+    }
+
+    _viewModel.updateReport(item.id, draft);
   }
 }
 

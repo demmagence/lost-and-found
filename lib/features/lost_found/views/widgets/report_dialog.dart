@@ -4,9 +4,10 @@ import '../../models/lost_found_models.dart';
 import '../lost_found_display.dart';
 
 class ReportDialog extends StatefulWidget {
-  const ReportDialog({super.key, this.fixedType});
+  const ReportDialog({super.key, this.fixedType, this.initialItem});
 
   final ItemType? fixedType;
+  final LostFoundItem? initialItem;
 
   @override
   State<ReportDialog> createState() => _ReportDialogState();
@@ -20,13 +21,29 @@ class _ReportDialogState extends State<ReportDialog> {
   final _reporterController = TextEditingController();
   final _contactController = TextEditingController();
   late ItemType _type;
-  ItemCategory _category = ItemCategory.other;
-  ItemPriority _priority = ItemPriority.normal;
+  late ItemCategory _category;
+  late ItemPriority _priority;
 
   @override
   void initState() {
     super.initState();
-    _type = widget.fixedType ?? ItemType.found;
+    final item = widget.initialItem;
+    if (item != null) {
+      _type = item.type;
+      _category = item.category;
+      _priority = item.priority;
+      _titleController.text = item.title;
+      _locationController.text = item.location;
+      _reporterController.text = item.reportedBy;
+      _contactController.text = item.contact;
+      _descriptionController.text = item.description == 'Belum ada catatan tambahan.'
+          ? ''
+          : item.description;
+    } else {
+      _type = widget.fixedType ?? ItemType.found;
+      _category = ItemCategory.other;
+      _priority = ItemPriority.normal;
+    }
   }
 
   @override
@@ -69,11 +86,13 @@ class _ReportDialogState extends State<ReportDialog> {
               ),
             ),
             Text(
-              switch (widget.fixedType) {
-                ItemType.found => 'Tambah laporan ditemukan',
-                ItemType.lost => 'Tambah laporan hilang',
-                null => 'Tambah laporan baru',
-              },
+              widget.initialItem != null
+                  ? 'Edit Laporan'
+                  : switch (widget.fixedType) {
+                      ItemType.found => 'Tambah laporan ditemukan',
+                      ItemType.lost => 'Tambah laporan hilang',
+                      null => 'Tambah laporan baru',
+                    },
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -86,28 +105,28 @@ class _ReportDialogState extends State<ReportDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (widget.fixedType == null) ...[
-                          SegmentedButton<ItemType>(
-                            key: const ValueKey('reportTypeSegment'),
-                            showSelectedIcon: false,
-                            segments: [
-                              for (final type in ItemType.values)
-                                ButtonSegment<ItemType>(
-                                  value: type,
-                                  icon: Icon(type.icon),
-                                  label: Text(type.label),
-                                ),
-                            ],
-                            selected: {_type},
-                            onSelectionChanged: (selection) {
-                              setState(() {
-                                _type = selection.first;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-                        TextFormField(
+                      if (widget.fixedType == null && widget.initialItem == null) ...[
+                        SegmentedButton<ItemType>(
+                          key: const ValueKey('reportTypeSegment'),
+                          showSelectedIcon: false,
+                          segments: [
+                            for (final type in ItemType.values)
+                              ButtonSegment<ItemType>(
+                                value: type,
+                                icon: Icon(type.icon),
+                                label: Text(type.label),
+                              ),
+                          ],
+                          selected: {_type},
+                          onSelectionChanged: (selection) {
+                            setState(() {
+                              _type = selection.first;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      TextFormField(
                           key: const ValueKey('reportTitleField'),
                           controller: _titleController,
                           decoration: const InputDecoration(

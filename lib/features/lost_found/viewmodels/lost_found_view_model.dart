@@ -175,6 +175,42 @@ class LostFoundViewModel extends ChangeNotifier {
     return created;
   }
 
+  LostFoundItem? updateReport(String id, ReportDraft draft) {
+    final item = itemById(id);
+    if (item == null) {
+      return null;
+    }
+
+    final updated = item.copyWith(
+      title: draft.title,
+      type: draft.type,
+      category: draft.category,
+      location: draft.location,
+      description: draft.description,
+      reportedBy: draft.reportedBy,
+      contact: draft.contact,
+      priority: draft.priority,
+      activities: [
+        ActivityLog(
+          message: 'Laporan diperbarui',
+          actor: draft.reportedBy.isNotEmpty ? draft.reportedBy : 'Staff Lost and Found',
+          timestamp: DateTime.now(),
+        ),
+        ...item.activities,
+      ],
+    );
+
+    _items = [
+      for (final current in _items)
+        if (current.id == item.id) updated else current,
+    ];
+    _selectedItemId = updated.id;
+    _syncSelection();
+    notifyListeners();
+
+    return updated;
+  }
+
   void _syncSelection() {
     final filtered = filteredItems;
     if (filtered.isEmpty) {

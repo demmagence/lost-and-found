@@ -10,11 +10,13 @@ class ItemDetailPanel extends StatelessWidget {
     super.key,
     required this.item,
     required this.onStatusChanged,
+    required this.onEdit,
     this.compact = false,
   });
 
   final LostFoundItem? item;
   final ValueChanged<ItemStatus> onStatusChanged;
+  final ValueChanged<LostFoundItem> onEdit;
   final bool compact;
 
   @override
@@ -82,7 +84,20 @@ class ItemDetailPanel extends StatelessWidget {
                   ),
                 ),
               ),
-            _DetailHeader(item: item, compact: compact),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _DetailHeader(item: item, compact: compact),
+                ),
+                IconButton(
+                  key: const ValueKey('editReportButton'),
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => onEdit(item),
+                  tooltip: 'Edit Laporan',
+                ),
+              ],
+            ),
             const SizedBox(height: 18),
             SectionTitle(
               icon: Icons.tune_outlined,

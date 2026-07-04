@@ -194,4 +194,31 @@ void main() {
     expect(find.text('Dompet Kulit Cokelat'), findsWidgets);
     expect(find.text('Laptop Lenovo ThinkPad'), findsNothing);
   });
+
+  testWidgets('edit report flow updates item details', (tester) async {
+    await pumpLostFoundApp(tester);
+
+    expect(find.descendant(
+      of: find.byKey(const ValueKey('detailPanel')),
+      matching: find.text('Laptop Lenovo ThinkPad'),
+    ), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('editReportButton')));
+    await tester.pumpAndSettle();
+
+    final titleField = find.byKey(const ValueKey('reportTitleField'));
+    expect(tester.widget<TextFormField>(titleField).controller?.text, 'Laptop Lenovo ThinkPad');
+    
+    await tester.enterText(titleField, 'Laptop Lenovo ThinkPad PRO');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('submitReportButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.descendant(
+      of: find.byKey(const ValueKey('detailPanel')),
+      matching: find.text('Laptop Lenovo ThinkPad PRO'),
+    ), findsOneWidget);
+    expect(find.text('Laporan diperbarui'), findsOneWidget);
+  });
 }

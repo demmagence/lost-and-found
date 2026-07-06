@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/lost_found_models.dart';
 import '../lost_found_display.dart';
@@ -43,6 +44,10 @@ class _ReportDialogState extends State<ReportDialog> {
       _type = widget.fixedType ?? ItemType.found;
       _category = ItemCategory.other;
       _priority = ItemPriority.normal;
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        _reporterController.text = user.email ?? '';
+      }
     }
   }
 

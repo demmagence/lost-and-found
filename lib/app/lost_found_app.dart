@@ -6,9 +6,14 @@ import '../features/lost_found/data/supabase_lost_found_repository.dart';
 import '../features/lost_found/views/lost_found_home_page.dart';
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key, this.repository});
+  const MainApp({
+    super.key,
+    this.repository,
+    this.bypassAuth = false,
+  });
 
   final LostFoundRepository? repository;
+  final bool bypassAuth;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +57,10 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      home: LostFoundHomePage(repository: repository ?? SupabaseLostFoundRepository()),
+      home: LostFoundHomePage(
+        repository: repository ?? SupabaseLostFoundRepository(),
+        bypassAuth: bypassAuth,
+      ),
     );
   }
 }

@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import '../../auth/views/login_page.dart';
+import '../../auth/views/profile_page.dart';
 import '../data/lost_found_repository.dart';
 import '../models/lost_found_models.dart';
 import '../viewmodels/lost_found_view_model.dart';
@@ -7,11 +11,15 @@ import 'widgets/dashboard_header.dart';
 import 'widgets/item_browser.dart';
 import 'widgets/item_detail_panel.dart';
 import 'widgets/report_dialog.dart';
-
 class LostFoundHomePage extends StatefulWidget {
-  const LostFoundHomePage({super.key, required this.repository});
+  const LostFoundHomePage({
+    super.key,
+    required this.repository,
+    this.bypassAuth = false,
+  });
 
   final LostFoundRepository repository;
+  final bool bypassAuth;
 
   @override
   State<LostFoundHomePage> createState() => _LostFoundHomePageState();
@@ -21,6 +29,7 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
   late final LostFoundViewModel _viewModel;
   late final TextEditingController _searchController;
   late final TextEditingController _appBarSearchController;
+  late final StreamSubscription<sb.AuthState> _authSubscription;
   int _currentTabIndex = 0;
   bool _isSearching = false;
 
@@ -31,10 +40,18 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
     _searchController = TextEditingController();
     _appBarSearchController = TextEditingController();
     _viewModel.addListener(_onViewModelChanged);
+
+    // Listen to Supabase auth state changes to rebuild UI immediately (e.g. monogram, prefill fields)
+    _authSubscription = sb.Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _viewModel.removeListener(_onViewModelChanged);
     _searchController.dispose();
     _appBarSearchController.dispose();
@@ -143,11 +160,38 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                   ],
                   Padding(
                     padding: EdgeInsets.only(right: padding),
-                    child: IconButton(
-                      key: const ValueKey('appBarMonogram'),
-                      iconSize: 32.0,
-                      icon: const Icon(Icons.account_circle),
-                      onPressed: () {},
+                    child: Builder(
+                      builder: (context) {
+                        final user = sb.Supabase.instance.client.auth.currentUser;
+                        if (user != null) {
+                          final email = user.email ?? '';
+                          final initial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
+                          return InkWell(
+                            key: const ValueKey('appBarMonogram'),
+                            onTap: _navigateToProfileOrLogin,
+                            borderRadius: BorderRadius.circular(16),
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: const Color(0x1A04756F),
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF04756F),
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return IconButton(
+                            key: const ValueKey('appBarMonogram'),
+                            iconSize: 32.0,
+                            icon: const Icon(Icons.account_circle_outlined),
+                            onPressed: _navigateToProfileOrLogin,
+                          );
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -176,19 +220,23 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                                   Expanded(
                                     child: ItemDetailPanel(
                                       item: _viewModel.selectedItem,
-                                      onStatusChanged: (status) {
+                                      onStatusChanged: (status) async {
                                         final selected =
                                             _viewModel.selectedItem;
                                         if (selected != null) {
-                                          _viewModel.changeStatus(
-                                            selected.id,
-                                            status,
-                                          );
+                                          if (await _ensureAuthenticated('Anda harus masuk untuk mengubah status.')) {
+                                            _viewModel.changeStatus(
+                                              selected.id,
+                                              status,
+                                            );
+                                          }
                                         }
                                       },
                                       onEdit: _openEditSheet,
-                                      onDelete: (deletedItem) {
-                                        _viewModel.deleteReport(deletedItem.id);
+                                      onDelete: (deletedItem) async {
+                                        if (await _ensureAuthenticated('Anda harus masuk untuk menghapus laporan.')) {
+                                          _viewModel.deleteReport(deletedItem.id);
+                                        }
                                       },
                                     ),
                                   ),
@@ -392,24 +440,29 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
           listenable: _viewModel,
           builder: (context, child) {
             final sheetItem = _viewModel.itemById(item.id) ?? item;
-
-            return FractionallySizedBox(
+return FractionallySizedBox(
               heightFactor: 0.92,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 child: ItemDetailPanel(
                    item: sheetItem,
                    compact: true,
-                   onStatusChanged: (status) {
-                     _viewModel.changeStatus(sheetItem.id, status);
+                   onStatusChanged: (status) async {
+                     if (await _ensureAuthenticated('Anda harus masuk untuk mengubah status.')) {
+                       _viewModel.changeStatus(sheetItem.id, status);
+                     }
                    },
-                   onEdit: (editedItem) {
-                     Navigator.of(context).pop();
-                     _openEditSheet(editedItem);
+                   onEdit: (editedItem) async {
+                     if (await _ensureAuthenticated('Anda harus masuk untuk mengedit laporan.')) {
+                       if (context.mounted) Navigator.of(context).pop();
+                       _openEditSheet(editedItem);
+                     }
                    },
-                   onDelete: (deletedItem) {
-                     Navigator.of(context).pop();
-                     _viewModel.deleteReport(deletedItem.id);
+                   onDelete: (deletedItem) async {
+                     if (await _ensureAuthenticated('Anda harus masuk untuk menghapus laporan.')) {
+                       if (context.mounted) Navigator.of(context).pop();
+                       _viewModel.deleteReport(deletedItem.id);
+                     }
                    },
                  ),
               ),
@@ -420,12 +473,57 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
     );
   }
 
+  Future<bool> _ensureAuthenticated(String message) async {
+    if (widget.bypassAuth) {
+      return true;
+    }
+    final user = sb.Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      return true;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: 'Masuk',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            );
+          },
+        ),
+        backgroundColor: const Color(0xFF04756F),
+      ),
+    );
+    return false;
+  }
+
+  void _navigateToProfileOrLogin() async {
+    final user = sb.Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ProfilePage()),
+      );
+    } else {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
+  }
   Future<void> _openReportDialog() async {
+    if (!await _ensureAuthenticated('Anda harus masuk untuk membuat laporan baru.')) {
+      return;
+    }
+
     final initialType = switch (_currentTabIndex) {
       1 => ItemType.found,
       2 => ItemType.lost,
       _ => null,
     };
+
+    if (!mounted) return;
 
     final draft = await showModalBottomSheet<ReportDraft>(
       context: context,
@@ -443,6 +541,12 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
   }
 
   Future<void> _openEditSheet(LostFoundItem item) async {
+    if (!await _ensureAuthenticated('Anda harus masuk untuk mengubah laporan.')) {
+      return;
+    }
+
+    if (!mounted) return;
+
     final draft = await showModalBottomSheet<ReportDraft>(
       context: context,
       isScrollControlled: true,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lost_and_found/app/lost_found_app.dart';
 import 'package:lost_and_found/features/lost_found/views/widgets/dashboard_header.dart';
 import 'package:lost_and_found/features/lost_found/views/widgets/item_browser.dart';
@@ -13,11 +15,33 @@ Future<void> pumpLostFoundApp(WidgetTester tester) async {
     tester.view.resetDevicePixelRatio();
   });
 
-  await tester.pumpWidget(MainApp(repository: InMemoryLostFoundRepository()));
+  await tester.pumpWidget(MainApp(
+    repository: InMemoryLostFoundRepository(),
+    bypassAuth: true,
+  ));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/shared_preferences'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'getAll') {
+          return <String, dynamic>{};
+        }
+        return null;
+      },
+    );
+
+    await Supabase.initialize(
+      url: 'https://placeholder.supabase.co',
+      publishableKey: 'placeholder-key',
+    );
+  });
+
   testWidgets('renders dashboard metrics and seeded item list', (tester) async {
     await pumpLostFoundApp(tester);
 
@@ -118,7 +142,10 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(MainApp(repository: InMemoryLostFoundRepository()));
+    await tester.pumpWidget(MainApp(
+      repository: InMemoryLostFoundRepository(),
+      bypassAuth: true,
+    ));
     await tester.pumpAndSettle();
 
     // Verify MetricsGrid is shown and ItemBrowser is hidden initially on Beranda

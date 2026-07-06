@@ -211,17 +211,18 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                   },
                 ),
               ),
-              floatingActionButton: (isWide || _currentTabIndex != 0)
-                  ? FloatingActionButton(
-                      key: const ValueKey('addReportButton'),
-                      elevation: 0,
-                      focusElevation: 0,
-                      hoverElevation: 0,
-                      highlightElevation: 0,
-                      onPressed: _openReportDialog,
-                      child: const Icon(Icons.add),
-                    )
-                  : null,
+              floatingActionButton: Visibility(
+                visible: isWide || _currentTabIndex != 0,
+                child: FloatingActionButton(
+                  key: const ValueKey('addReportButton'),
+                  elevation: 0,
+                  focusElevation: 0,
+                  hoverElevation: 0,
+                  highlightElevation: 0,
+                  onPressed: _openReportDialog,
+                  child: const Icon(Icons.add),
+                ),
+              ),
               bottomNavigationBar: isWide
                   ? null
                   : NavigationBar(

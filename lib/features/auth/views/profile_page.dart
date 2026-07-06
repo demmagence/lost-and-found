@@ -66,7 +66,6 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colorScheme.outlineVariant),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0x05000000),
@@ -160,12 +159,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 32),
                   
                   // Logout Button
-                  OutlinedButton(
+                  FilledButton(
                     key: const ValueKey('logoutButton'),
                     onPressed: _isLoggingOut ? null : _handleLogout,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade700,
-                      side: BorderSide(color: Colors.red.shade200),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red.shade700,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -177,7 +176,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.red,
+                              color: Colors.white,
                             ),
                           )
                         : const Text(

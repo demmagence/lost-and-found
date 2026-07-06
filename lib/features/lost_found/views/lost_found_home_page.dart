@@ -83,6 +83,12 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
             return Scaffold(
               appBar: AppBar(
                 automaticallyImplyLeading: false,
+                bottom: _viewModel.isLoading
+                    ? const PreferredSize(
+                        preferredSize: Size.fromHeight(2),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      )
+                    : null,
                 leading: (showAppBarSearch && _isSearching)
                     ? IconButton(
                         icon: const Icon(Icons.arrow_back),

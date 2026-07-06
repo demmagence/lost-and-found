@@ -89,6 +89,22 @@ class ActivityLog {
   final String message;
   final String actor;
   final DateTime timestamp;
+
+  factory ActivityLog.fromJson(Map<String, dynamic> json) {
+    return ActivityLog(
+      message: json['message'] as String,
+      actor: json['actor'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'actor': actor,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
 }
 
 class ClaimRecord {
@@ -105,6 +121,26 @@ class ClaimRecord {
   final String note;
   final DateTime submittedAt;
   final ClaimStatus status;
+
+  factory ClaimRecord.fromJson(Map<String, dynamic> json) {
+    return ClaimRecord(
+      claimantName: json['claimantName'] as String,
+      contact: json['contact'] as String,
+      note: json['note'] as String,
+      submittedAt: DateTime.parse(json['submittedAt'] as String),
+      status: ClaimStatus.values.firstWhere((e) => e.name == json['status']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'claimantName': claimantName,
+      'contact': contact,
+      'note': note,
+      'submittedAt': submittedAt.toIso8601String(),
+      'status': status.name,
+    };
+  }
 }
 
 class LostFoundItem {
@@ -137,6 +173,45 @@ class LostFoundItem {
   final ItemPriority priority;
   final ClaimRecord? claim;
   final List<ActivityLog> activities;
+
+  factory LostFoundItem.fromJson(Map<String, dynamic> json) {
+    final claimJson = json['claim'];
+    return LostFoundItem(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      type: ItemType.values.firstWhere((e) => e.name == json['type']),
+      category: ItemCategory.values.firstWhere((e) => e.name == json['category']),
+      location: json['location'] as String,
+      description: json['description'] as String,
+      reportedBy: json['reported_by'] as String,
+      contact: json['contact'] as String,
+      reportedAt: DateTime.parse(json['reported_at'] as String),
+      status: ItemStatus.values.firstWhere((e) => e.name == json['status']),
+      priority: ItemPriority.values.firstWhere((e) => e.name == json['priority']),
+      claim: claimJson != null ? ClaimRecord.fromJson(claimJson as Map<String, dynamic>) : null,
+      activities: (json['activities'] as List<dynamic>)
+          .map((e) => ActivityLog.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'type': type.name,
+      'category': category.name,
+      'location': location,
+      'description': description,
+      'reported_by': reportedBy,
+      'contact': contact,
+      'reported_at': reportedAt.toIso8601String(),
+      'status': status.name,
+      'priority': priority.name,
+      'claim': claim?.toJson(),
+      'activities': activities.map((e) => e.toJson()).toList(),
+    };
+  }
 
   LostFoundItem copyWith({
     String? id,

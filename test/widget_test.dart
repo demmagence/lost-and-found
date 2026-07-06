@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lost_and_found/app/lost_found_app.dart';
+import 'package:lost_and_found/features/lost_found/data/lost_found_repository.dart';
 import 'package:lost_and_found/features/lost_found/views/widgets/dashboard_header.dart';
 import 'package:lost_and_found/features/lost_found/views/widgets/item_browser.dart';
 
@@ -12,7 +13,7 @@ Future<void> pumpLostFoundApp(WidgetTester tester) async {
     tester.view.resetDevicePixelRatio();
   });
 
-  await tester.pumpWidget(const MainApp());
+  await tester.pumpWidget(MainApp(repository: InMemoryLostFoundRepository()));
   await tester.pumpAndSettle();
 }
 
@@ -117,7 +118,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(const MainApp());
+    await tester.pumpWidget(MainApp(repository: InMemoryLostFoundRepository()));
     await tester.pumpAndSettle();
 
     // Verify MetricsGrid is shown and ItemBrowser is hidden initially on Beranda

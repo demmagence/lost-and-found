@@ -5,20 +5,19 @@ import '../models/lost_found_models.dart';
 
 class LostFoundViewModel extends ChangeNotifier {
   LostFoundViewModel({required this.repository}) {
-    _items = repository.loadItems();
-    _selectedItemId = _items.isEmpty ? null : _items.first.id;
-    _nextIdNumber = _resolveNextIdNumber(_items);
+    loadItems();
   }
 
   final LostFoundRepository repository;
-  late List<LostFoundItem> _items;
-  late int _nextIdNumber;
+  List<LostFoundItem> _items = [];
+  bool _isLoading = false;
   String? _selectedItemId;
   String _query = '';
   ItemType? _typeFilter;
   ItemStatus? _statusFilter;
 
   List<LostFoundItem> get items => List.unmodifiable(_items);
+  bool get isLoading => _isLoading;
   String get query => _query;
   ItemType? get typeFilter => _typeFilter;
   ItemStatus? get statusFilter => _statusFilter;
@@ -75,6 +74,22 @@ class LostFoundViewModel extends ChangeNotifier {
     );
   }
 
+  Future<void> loadItems() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _items = await repository.loadItems();
+      _syncSelection();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading items: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   LostFoundItem? itemById(String id) {
     for (final item in _items) {
       if (item.id == id) {
@@ -115,109 +130,96 @@ class LostFoundViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  LostFoundItem? changeStatus(String itemId, ItemStatus status) {
-    final item = itemById(itemId);
-    if (item == null) {
-      return null;
-    }
-
-    final updated = item.copyWith(
-      status: status,
-      activities: [
-        ActivityLog(
-          message: 'Status diubah menjadi ${status.label}',
-          actor: 'Staff Lost and Found',
-          timestamp: DateTime.now(),
-        ),
-        ...item.activities,
-      ],
-    );
-
-    _items = [
-      for (final current in _items)
-        if (current.id == item.id) updated else current,
-    ];
-    _selectedItemId = updated.id;
-    _syncSelection();
+  Future<LostFoundItem?> changeStatus(String itemId, ItemStatus status) async {
+    _isLoading = true;
     notifyListeners();
-
-    return updated;
+    try {
+      final updated = await repository.changeStatus(itemId, status);
+      if (updated != null) {
+        _items = [
+          for (final current in _items)
+            if (current.id == updated.id) updated else current,
+        ];
+        _selectedItemId = updated.id;
+        _syncSelection();
+        return updated;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error changing status: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
   }
 
-  LostFoundItem addReport(ReportDraft draft) {
-    final created = LostFoundItem(
-      id: 'LF-${_nextIdNumber++}',
-      title: draft.title,
-      type: draft.type,
-      category: draft.category,
-      location: draft.location,
-      description: draft.description,
-      reportedBy: draft.reportedBy,
-      contact: draft.contact,
-      reportedAt: DateTime.now(),
-      status: ItemStatus.open,
-      priority: draft.priority,
-      activities: [
-        ActivityLog(
-          message: 'Laporan dibuat',
-          actor: draft.reportedBy,
-          timestamp: DateTime.now(),
-        ),
-      ],
-    );
-
-    _items = [created, ..._items];
-    _selectedItemId = created.id;
-    _query = '';
-    _statusFilter = null;
+  Future<LostFoundItem?> addReport(ReportDraft draft) async {
+    _isLoading = true;
     notifyListeners();
-
-    return created;
+    try {
+      final created = await repository.addReport(draft);
+      _items = [created, ..._items];
+      _selectedItemId = created.id;
+      _query = '';
+      _statusFilter = null;
+      _syncSelection();
+      return created;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error adding report: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
   }
 
-  LostFoundItem? updateReport(String id, ReportDraft draft) {
-    final item = itemById(id);
-    if (item == null) {
-      return null;
-    }
-
-    final updated = item.copyWith(
-      title: draft.title,
-      type: draft.type,
-      category: draft.category,
-      location: draft.location,
-      description: draft.description,
-      reportedBy: draft.reportedBy,
-      contact: draft.contact,
-      priority: draft.priority,
-      activities: [
-        ActivityLog(
-          message: 'Laporan diperbarui',
-          actor: draft.reportedBy.isNotEmpty ? draft.reportedBy : 'Staff Lost and Found',
-          timestamp: DateTime.now(),
-        ),
-        ...item.activities,
-      ],
-    );
-
-    _items = [
-      for (final current in _items)
-        if (current.id == item.id) updated else current,
-    ];
-    _selectedItemId = updated.id;
-    _syncSelection();
+  Future<LostFoundItem?> updateReport(String id, ReportDraft draft) async {
+    _isLoading = true;
     notifyListeners();
-
-    return updated;
+    try {
+      final updated = await repository.updateReport(id, draft);
+      if (updated != null) {
+        _items = [
+          for (final current in _items)
+            if (current.id == updated.id) updated else current,
+        ];
+        _selectedItemId = updated.id;
+        _syncSelection();
+        return updated;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating report: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
   }
 
-  void deleteReport(String id) {
-    _items = [for (final item in _items) if (item.id != id) item];
-    if (_selectedItemId == id) {
-      _selectedItemId = null;
-    }
-    _syncSelection();
+  Future<void> deleteReport(String id) async {
+    _isLoading = true;
     notifyListeners();
+    try {
+      await repository.deleteReport(id);
+      _items = [for (final item in _items) if (item.id != id) item];
+      if (_selectedItemId == id) {
+        _selectedItemId = null;
+      }
+      _syncSelection();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting report: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void _syncSelection() {
@@ -231,12 +233,5 @@ class LostFoundViewModel extends ChangeNotifier {
     if (selectedId == null || !filtered.any((item) => item.id == selectedId)) {
       _selectedItemId = filtered.first.id;
     }
-  }
-
-  int _resolveNextIdNumber(List<LostFoundItem> items) {
-    final highest = items
-        .map((item) => int.tryParse(item.id.replaceFirst('LF-', '')) ?? 0)
-        .fold<int>(1000, (max, value) => value > max ? value : max);
-    return highest + 1;
   }
 }

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../features/lost_found/data/lost_found_repository.dart';
+import '../features/lost_found/data/supabase_lost_found_repository.dart';
 import '../features/lost_found/views/lost_found_home_page.dart';
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  const MainApp({super.key, this.repository});
+
+  final LostFoundRepository? repository;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +52,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LostFoundHomePage(repository: InMemoryLostFoundRepository()),
+      home: LostFoundHomePage(repository: repository ?? SupabaseLostFoundRepository()),
     );
   }
 }

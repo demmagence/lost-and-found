@@ -82,7 +82,6 @@ class _LoginPageState extends State<LoginPage> {
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colorScheme.outlineVariant),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0x05000000),

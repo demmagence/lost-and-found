@@ -39,7 +39,9 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Color(0xFF04756F),
           ),
         );
-        Navigator.of(context).pop(true); // Return success
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true); // Return success
+        }
       }
     } on AuthException catch (e) {
       if (mounted) {

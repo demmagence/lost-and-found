@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../features/auth/views/auth_wrapper.dart';
 import '../features/lost_found/data/lost_found_repository.dart';
 import '../features/lost_found/data/supabase_lost_found_repository.dart';
-import '../features/lost_found/views/lost_found_home_page.dart';
 
 class MainApp extends StatelessWidget {
   const MainApp({
@@ -15,6 +15,8 @@ class MainApp extends StatelessWidget {
   final LostFoundRepository? repository;
   final bool bypassAuth;
 
+  static final navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(
@@ -23,6 +25,7 @@ class MainApp extends StatelessWidget {
     );
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Lost and Found',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -57,7 +60,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      home: LostFoundHomePage(
+      home: AuthWrapper(
         repository: repository ?? SupabaseLostFoundRepository(),
         bypassAuth: bypassAuth,
       ),

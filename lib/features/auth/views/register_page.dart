@@ -45,7 +45,9 @@ class _RegisterPageState extends State<RegisterPage> {
               backgroundColor: Color(0xFF04756F),
             ),
           );
-          Navigator.of(context).pop(true); // Return success
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true); // Return success
+          }
         } else {
           // If email confirmation is required by Supabase configuration
           ScaffoldMessenger.of(context).showSnackBar(

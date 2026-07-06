@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lost_and_found/app/lost_found_app.dart';
-import 'package:lost_and_found/features/lost_found/data/lost_found_repository.dart';
 import 'package:lost_and_found/features/lost_found/views/widgets/dashboard_header.dart';
 import 'package:lost_and_found/features/lost_found/views/widgets/item_browser.dart';
+import 'mocks/mock_lost_found_repository.dart';
 
 Future<void> pumpLostFoundApp(WidgetTester tester) async {
   tester.view.physicalSize = const Size(1280, 900);

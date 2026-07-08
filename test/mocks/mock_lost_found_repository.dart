@@ -225,4 +225,57 @@ class InMemoryLostFoundRepository implements LostFoundRepository {
     _localItems[idx] = updated;
     return updated;
   }
+
+  @override
+  Future<LostFoundItem?> submitClaim(String itemId, ClaimRecord claim) async {
+    final idx = _localItems.indexWhere((e) => e.id == itemId);
+    if (idx == -1) return null;
+    final item = _localItems[idx];
+    final updated = item.copyWith(
+      status: ItemStatus.claimReview,
+      claim: claim,
+      activities: [
+        ActivityLog(
+          message: 'Klaim diajukan',
+          actor: claim.claimantName,
+          timestamp: DateTime.now(),
+        ),
+        ...item.activities,
+      ],
+    );
+    _localItems[idx] = updated;
+    return updated;
+  }
+
+  @override
+  Future<LostFoundItem?> resolveClaim(String itemId, ClaimStatus claimStatus, ItemStatus itemStatus) async {
+    final idx = _localItems.indexWhere((e) => e.id == itemId);
+    if (idx == -1) return null;
+    final item = _localItems[idx];
+    
+    final updatedClaim = item.claim != null
+        ? ClaimRecord(
+            claimantName: item.claim!.claimantName,
+            contact: item.claim!.contact,
+            note: item.claim!.note,
+            submittedAt: item.claim!.submittedAt,
+            status: claimStatus,
+          )
+        : null;
+        
+    final updated = item.copyWith(
+      status: itemStatus,
+      claim: claimStatus == ClaimStatus.rejected ? null : updatedClaim,
+      activities: [
+        ActivityLog(
+          message: 'Klaim diselesaikan',
+          actor: 'Sistem',
+          timestamp: DateTime.now(),
+        ),
+        ...item.activities,
+      ],
+    );
+    _localItems[idx] = updated;
+    return updated;
+  }
 }

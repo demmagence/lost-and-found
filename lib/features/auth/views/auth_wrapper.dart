@@ -40,8 +40,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
           _loading = false;
         });
         
-        // If user logs out, pop all pushed screens to return clean to the LoginPage root
-        if (!newAuth && !widget.bypassAuth) {
+        // If user logs in or logs out, pop all pushed screens to return clean to the root
+        if (!widget.bypassAuth) {
           MainApp.navigatorKey.currentState?.popUntil((route) => route.isFirst);
         }
       } else {

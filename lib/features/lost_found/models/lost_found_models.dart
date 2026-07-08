@@ -157,10 +157,12 @@ class LostFoundItem {
     required this.status,
     required this.priority,
     required this.activities,
+    this.userId,
     this.claim,
   });
 
   final String id;
+  final String? userId;
   final String title;
   final ItemType type;
   final ItemCategory category;
@@ -178,6 +180,7 @@ class LostFoundItem {
     final claimJson = json['claim'];
     return LostFoundItem(
       id: json['id'] as String,
+      userId: json['user_id'] as String?,
       title: json['title'] as String,
       type: ItemType.values.firstWhere((e) => e.name == json['type']),
       category: ItemCategory.values.firstWhere((e) => e.name == json['category']),
@@ -198,6 +201,7 @@ class LostFoundItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'title': title,
       'type': type.name,
       'category': category.name,
@@ -215,6 +219,7 @@ class LostFoundItem {
 
   LostFoundItem copyWith({
     String? id,
+    String? userId,
     String? title,
     ItemType? type,
     ItemCategory? category,
@@ -230,6 +235,7 @@ class LostFoundItem {
   }) {
     return LostFoundItem(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       type: type ?? this.type,
       category: category ?? this.category,

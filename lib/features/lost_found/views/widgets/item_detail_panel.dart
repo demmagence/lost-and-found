@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../../../../core/utils/date_formatter.dart';
 import '../../models/lost_found_models.dart';
@@ -10,6 +11,8 @@ class ItemDetailPanel extends StatelessWidget {
     super.key,
     required this.item,
     required this.onStatusChanged,
+    required this.onSubmitClaim,
+    required this.onResolveClaim,
     required this.onEdit,
     required this.onDelete,
     this.compact = false,
@@ -17,6 +20,8 @@ class ItemDetailPanel extends StatelessWidget {
 
   final LostFoundItem? item;
   final ValueChanged<ItemStatus> onStatusChanged;
+  final ValueChanged<ClaimRecord> onSubmitClaim;
+  final void Function(ClaimStatus claimStatus, ItemStatus itemStatus) onResolveClaim;
   final ValueChanged<LostFoundItem> onEdit;
   final ValueChanged<LostFoundItem> onDelete;
   final bool compact;
@@ -92,21 +97,23 @@ class ItemDetailPanel extends StatelessWidget {
                 Expanded(
                   child: _DetailHeader(item: item, compact: compact),
                 ),
-                IconButton(
-                  key: const ValueKey('editReportButton'),
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => onEdit(item),
-                  tooltip: 'Edit Laporan',
-                ),
-                IconButton(
-                  key: const ValueKey('deleteReportButton'),
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: Theme.of(context).colorScheme.error,
+                if (sb.Supabase.instance.client.auth.currentUser?.id == item.userId) ...[
+                  IconButton(
+                    key: const ValueKey('editReportButton'),
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => onEdit(item),
+                    tooltip: 'Edit Laporan',
                   ),
-                  onPressed: () => _confirmDelete(context, item),
-                  tooltip: 'Hapus Laporan',
-                ),
+                  IconButton(
+                    key: const ValueKey('deleteReportButton'),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    onPressed: () => _confirmDelete(context, item),
+                    tooltip: 'Hapus Laporan',
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 18),
@@ -120,14 +127,46 @@ class ItemDetailPanel extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final status in ItemStatus.values)
-                  if (status != item.status)
-                    FilledButton.tonalIcon(
-                      key: ValueKey('status-${status.name}'),
-                      onPressed: () => onStatusChanged(status),
-                      icon: Icon(status.icon, size: 18),
-                      label: Text(status.actionLabel),
+                if (item.status == ItemStatus.open)
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('action-submit-claim'),
+                    onPressed: () => onStatusChanged(ItemStatus.claimReview), // Will be intercepted in parent
+                    icon: const Icon(Icons.handshake_outlined, size: 18),
+                    label: const Text('Ajukan Klaim'),
+                  ),
+                if (item.status == ItemStatus.claimReview) ...[
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('action-accept-claim'),
+                    onPressed: () => onResolveClaim(ClaimStatus.approved, ItemStatus.matched),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Terima Klaim'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.primaryContainer,
+                      foregroundColor: scheme.onPrimaryContainer,
                     ),
+                  ),
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('action-reject-claim'),
+                    onPressed: () => onResolveClaim(ClaimStatus.rejected, ItemStatus.open),
+                    icon: const Icon(Icons.cancel_outlined, size: 18),
+                    label: const Text('Tolak Klaim'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.errorContainer,
+                      foregroundColor: scheme.onErrorContainer,
+                    ),
+                  ),
+                ],
+                if (item.status == ItemStatus.matched)
+                  FilledButton.tonalIcon(
+                    key: const ValueKey('action-mark-returned'),
+                    onPressed: () => onStatusChanged(ItemStatus.returned),
+                    icon: const Icon(Icons.assignment_returned_outlined, size: 18),
+                    label: const Text('Selesaikan & Kembalikan'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.tertiaryContainer,
+                      foregroundColor: scheme.onTertiaryContainer,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 22),
@@ -299,7 +338,7 @@ class _InfoGrid extends StatelessWidget {
           _InfoBlock(
             label: 'Kontak',
             value: item.contact.isEmpty ? 'Belum dicatat' : item.contact,
-            icon: Icons.alternate_email,
+            icon: Icons.phone_outlined,
           ),
         ];
 

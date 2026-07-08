@@ -31,6 +31,7 @@ class SupabaseLostFoundRepository implements LostFoundRepository {
 
     final newItem = LostFoundItem(
       id: nextId,
+      userId: _client.auth.currentUser?.id,
       title: draft.title,
       type: draft.type,
       category: draft.category,
@@ -107,6 +108,69 @@ class SupabaseLostFoundRepository implements LostFoundRepository {
     );
 
     await _client.from('items').update(updated.toJson()).eq('id', itemId);
+    return updated;
+  }
+  @override
+  Future<LostFoundItem?> submitClaim(String itemId, ClaimRecord claim) async {
+    final response = await _client.from('items').select().eq('id', itemId).maybeSingle();
+    if (response == null) return null;
+    final item = LostFoundItem.fromJson(response);
+
+    final updated = item.copyWith(
+      status: ItemStatus.claimReview,
+      claim: claim,
+      activities: [
+        ActivityLog(
+          message: 'Klaim diajukan oleh ${claim.claimantName}',
+          actor: claim.claimantName,
+          timestamp: DateTime.now(),
+        ),
+        ...item.activities,
+      ],
+    );
+
+    await _client.from('items').update({
+      'status': updated.status.name,
+      'claim': updated.claim?.toJson(),
+      'activities': updated.activities.map((a) => a.toJson()).toList(),
+    }).eq('id', itemId);
+    return updated;
+  }
+
+  @override
+  Future<LostFoundItem?> resolveClaim(String itemId, ClaimStatus claimStatus, ItemStatus itemStatus) async {
+    final response = await _client.from('items').select().eq('id', itemId).maybeSingle();
+    if (response == null) return null;
+    final item = LostFoundItem.fromJson(response);
+
+    final updatedClaim = item.claim != null
+        ? ClaimRecord(
+            claimantName: item.claim!.claimantName,
+            contact: item.claim!.contact,
+            note: item.claim!.note,
+            submittedAt: item.claim!.submittedAt,
+            status: claimStatus,
+          )
+        : null;
+
+    final updated = item.copyWith(
+      status: itemStatus,
+      claim: claimStatus == ClaimStatus.rejected ? null : updatedClaim,
+      activities: [
+        ActivityLog(
+          message: 'Klaim ditinjau dan ${claimStatus.label}. Status barang menjadi ${itemStatus.label}',
+          actor: 'Sistem',
+          timestamp: DateTime.now(),
+        ),
+        ...item.activities,
+      ],
+    );
+
+    await _client.from('items').update({
+      'status': updated.status.name,
+      'claim': updated.claim?.toJson(),
+      'activities': updated.activities.map((a) => a.toJson()).toList(),
+    }).eq('id', itemId);
     return updated;
   }
 }

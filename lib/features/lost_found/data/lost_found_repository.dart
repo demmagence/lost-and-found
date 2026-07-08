@@ -6,4 +6,6 @@ abstract interface class LostFoundRepository {
   Future<LostFoundItem?> updateReport(String id, ReportDraft draft);
   Future<void> deleteReport(String id);
   Future<LostFoundItem?> changeStatus(String itemId, ItemStatus status);
+  Future<LostFoundItem?> submitClaim(String itemId, ClaimRecord claim);
+  Future<LostFoundItem?> resolveClaim(String itemId, ClaimStatus claimStatus, ItemStatus itemStatus);
 }

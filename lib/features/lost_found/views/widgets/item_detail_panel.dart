@@ -127,14 +127,14 @@ class ItemDetailPanel extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (item.status == ItemStatus.open)
+                if (item.status == ItemStatus.open && sb.Supabase.instance.client.auth.currentUser?.id != item.userId)
                   FilledButton.tonalIcon(
                     key: const ValueKey('action-submit-claim'),
                     onPressed: () => onStatusChanged(ItemStatus.claimReview), // Will be intercepted in parent
                     icon: const Icon(Icons.handshake_outlined, size: 18),
                     label: const Text('Ajukan Klaim'),
                   ),
-                if (item.status == ItemStatus.claimReview) ...[
+                if (item.status == ItemStatus.claimReview && sb.Supabase.instance.client.auth.currentUser?.id == item.userId) ...[
                   FilledButton.tonalIcon(
                     key: const ValueKey('action-accept-claim'),
                     onPressed: () => onResolveClaim(ClaimStatus.approved, ItemStatus.matched),
@@ -156,7 +156,7 @@ class ItemDetailPanel extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (item.status == ItemStatus.matched)
+                if (item.status == ItemStatus.matched && sb.Supabase.instance.client.auth.currentUser?.id == item.userId)
                   FilledButton.tonalIcon(
                     key: const ValueKey('action-mark-returned'),
                     onPressed: () => onStatusChanged(ItemStatus.returned),

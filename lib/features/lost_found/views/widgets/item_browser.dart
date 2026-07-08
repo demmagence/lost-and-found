@@ -13,20 +13,28 @@ class ItemBrowser extends StatelessWidget {
     required this.query,
     required this.typeFilter,
     required this.statusFilter,
+    required this.categoryFilter,
+    required this.priorityFilter,
     required this.onQueryChanged,
     required this.onTypeChanged,
     required this.onStatusChanged,
+    required this.onCategoryChanged,
+    required this.onPriorityChanged,
     required this.onClearFilters,
     required this.onSelectItem,
     this.showTypeFilters = true,
     this.showSearchBar = true,
     this.showStatusFilter = true,
+    this.showCategoryFilter = true,
+    this.showPriorityFilter = true,
     this.showOuterBorder = true,
   });
 
   final bool showTypeFilters;
   final bool showSearchBar;
   final bool showStatusFilter;
+  final bool showCategoryFilter;
+  final bool showPriorityFilter;
   final bool showOuterBorder;
 
   final List<LostFoundItem> items;
@@ -35,16 +43,20 @@ class ItemBrowser extends StatelessWidget {
   final String query;
   final ItemType? typeFilter;
   final ItemStatus? statusFilter;
+  final ItemCategory? categoryFilter;
+  final ItemPriority? priorityFilter;
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<ItemType?> onTypeChanged;
   final ValueChanged<ItemStatus?> onStatusChanged;
+  final ValueChanged<ItemCategory?> onCategoryChanged;
+  final ValueChanged<ItemPriority?> onPriorityChanged;
   final VoidCallback onClearFilters;
   final ValueChanged<LostFoundItem> onSelectItem;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final hasAnyFilter = showSearchBar || showTypeFilters || showStatusFilter;
+    final hasAnyFilter = showSearchBar || showTypeFilters || showStatusFilter || showCategoryFilter || showPriorityFilter;
 
     return Container(
       decoration: showOuterBorder
@@ -129,6 +141,62 @@ class ItemBrowser extends StatelessWidget {
                         ],
                       ),
                     ),
+                  if (showCategoryFilter) ...[
+                    if (showStatusFilter) const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ChoiceChip(
+                            key: const ValueKey('filterCategoryAll'),
+                            label: const Text('Semua kategori'),
+                            selected: categoryFilter == null,
+                            side: BorderSide.none,
+                            onSelected: (_) => onCategoryChanged(null),
+                          ),
+                          const SizedBox(width: 8),
+                          for (final category in ItemCategory.values) ...[
+                            ChoiceChip(
+                              key: ValueKey('filterCategory-${category.name}'),
+                              label: Text(category.label),
+                              selected: categoryFilter == category,
+                              side: BorderSide.none,
+                              onSelected: (_) => onCategoryChanged(category),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (showPriorityFilter) ...[
+                    if (showStatusFilter || showCategoryFilter) const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ChoiceChip(
+                            key: const ValueKey('filterPriorityAll'),
+                            label: const Text('Semua prioritas'),
+                            selected: priorityFilter == null,
+                            side: BorderSide.none,
+                            onSelected: (_) => onPriorityChanged(null),
+                          ),
+                          const SizedBox(width: 8),
+                          for (final priority in ItemPriority.values) ...[
+                            ChoiceChip(
+                              key: ValueKey('filterPriority-${priority.name}'),
+                              label: Text(priority.label),
+                              selected: priorityFilter == priority,
+                              side: BorderSide.none,
+                              onSelected: (_) => onPriorityChanged(priority),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

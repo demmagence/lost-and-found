@@ -19,11 +19,12 @@ class _ReportDialogState extends State<ReportDialog> {
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _reporterController = TextEditingController();
-  final _contactController = TextEditingController();
   late ItemType _type;
   late ItemCategory _category;
   late ItemPriority _priority;
+
+  String _currentDisplayName = 'Pengguna Anonim';
+  String _currentPhone = '';
 
   @override
   void initState() {
@@ -35,8 +36,8 @@ class _ReportDialogState extends State<ReportDialog> {
       _priority = item.priority;
       _titleController.text = item.title;
       _locationController.text = item.location;
-      _reporterController.text = item.reportedBy;
-      _contactController.text = item.contact;
+      _currentDisplayName = item.reportedBy;
+      _currentPhone = item.contact;
       _descriptionController.text = item.description == 'Belum ada catatan tambahan.'
           ? ''
           : item.description;
@@ -44,9 +45,29 @@ class _ReportDialogState extends State<ReportDialog> {
       _type = widget.fixedType ?? ItemType.found;
       _category = ItemCategory.other;
       _priority = ItemPriority.normal;
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        _reporterController.text = user.email ?? '';
+      _fetchUserData();
+    }
+  }
+
+  Future<void> _fetchUserData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final name = user.userMetadata?['display_name'] as String?;
+      String? phone;
+      try {
+        final data = await Supabase.instance.client
+            .from('phone')
+            .select('phone_number')
+            .eq('id', user.id)
+            .maybeSingle();
+        phone = data?['phone_number'] as String?;
+      } catch (_) {}
+      
+      if (mounted) {
+        setState(() {
+          _currentDisplayName = name ?? user.email ?? 'Pengguna Anonim';
+          _currentPhone = phone ?? user.phone ?? '';
+        });
       }
     }
   }
@@ -56,8 +77,6 @@ class _ReportDialogState extends State<ReportDialog> {
     _titleController.dispose();
     _locationController.dispose();
     _descriptionController.dispose();
-    _reporterController.dispose();
-    _contactController.dispose();
     super.dispose();
   }
 
@@ -196,25 +215,6 @@ class _ReportDialogState extends State<ReportDialog> {
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
-                          key: const ValueKey('reportReporterField'),
-                          controller: _reporterController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama pelapor',
-                            prefixIcon: Icon(Icons.person_outline),
-                          ),
-                          validator: _requiredValidator,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          key: const ValueKey('reportContactField'),
-                          controller: _contactController,
-                          decoration: const InputDecoration(
-                            labelText: 'Kontak',
-                            prefixIcon: Icon(Icons.alternate_email),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
                           key: const ValueKey('reportDescriptionField'),
                           controller: _descriptionController,
                           decoration: const InputDecoration(
@@ -274,8 +274,8 @@ class _ReportDialogState extends State<ReportDialog> {
         description: _descriptionController.text.trim().isEmpty
             ? 'Belum ada catatan tambahan.'
             : _descriptionController.text.trim(),
-        reportedBy: _reporterController.text.trim(),
-        contact: _contactController.text.trim(),
+        reportedBy: _currentDisplayName,
+        contact: _currentPhone,
         priority: _priority,
       ),
     );

@@ -7,6 +7,7 @@ import '../../auth/views/profile_page.dart';
 import '../data/lost_found_repository.dart';
 import '../models/lost_found_models.dart';
 import '../viewmodels/lost_found_view_model.dart';
+import 'widgets/claim_dialog.dart';
 import 'widgets/dashboard_header.dart';
 import 'widgets/item_browser.dart';
 import 'widgets/item_detail_panel.dart';
@@ -141,16 +142,7 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                 elevation: 0,
                 toolbarHeight: 72,
                 actions: [
-                  if (showAppBarSearch && !_isSearching) ...[  
-                    IconButton(
-                      key: const ValueKey('appBarFilterButton'),
-                      iconSize: 24.0,
-                      icon: Badge(
-                        isLabelVisible: _viewModel.statusFilter != null,
-                        child: const Icon(Icons.tune),
-                      ),
-                      onPressed: () => _openFilterSheet(context),
-                    ),
+                  if (showAppBarSearch && !_isSearching) ...[
                     IconButton(
                       key: const ValueKey('appBarSearchButton'),
                       iconSize: 24.0,
@@ -158,6 +150,16 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                       onPressed: _startSearch,
                     ),
                   ],
+                  if (!_isSearching && (isWide || _currentTabIndex != 0))
+                    IconButton(
+                      key: const ValueKey('appBarFilterButton'),
+                      iconSize: 24.0,
+                      icon: Badge(
+                        isLabelVisible: _viewModel.statusFilter != null || _viewModel.categoryFilter != null || _viewModel.priorityFilter != null,
+                        child: const Icon(Icons.tune),
+                      ),
+                      onPressed: () => _openFilterSheet(context),
+                    ),
                   Padding(
                     padding: EdgeInsets.only(right: padding),
                     child: Builder(
@@ -166,11 +168,11 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                         if (user != null) {
                           final email = user.email ?? '';
                           final initial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
-                          return InkWell(
+                          return IconButton(
                             key: const ValueKey('appBarMonogram'),
-                            onTap: _navigateToProfileOrLogin,
-                            borderRadius: BorderRadius.circular(16),
-                            child: CircleAvatar(
+                            onPressed: _navigateToProfileOrLogin,
+                            iconSize: 32.0,
+                            icon: CircleAvatar(
                               radius: 16,
                               backgroundColor: const Color(0x1A04756F),
                               child: Text(
@@ -221,15 +223,25 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                                     child: ItemDetailPanel(
                                       item: _viewModel.selectedItem,
                                       onStatusChanged: (status) async {
-                                        final selected =
-                                            _viewModel.selectedItem;
-                                        if (selected != null) {
-                                          if (await _ensureAuthenticated('Anda harus masuk untuk mengubah status.')) {
-                                            _viewModel.changeStatus(
-                                              selected.id,
-                                              status,
+                                        final selected = _viewModel.selectedItem;
+                                        if (selected != null && await _ensureAuthenticated('Anda harus masuk untuk mengubah status.')) {
+                                          if (!context.mounted) return;
+                                          if (status == ItemStatus.claimReview) {
+                                            final claim = await showDialog<ClaimRecord>(
+                                              context: context,
+                                              builder: (context) => const ClaimDialog(),
                                             );
+                                            if (claim != null) _viewModel.submitClaim(selected.id, claim);
+                                          } else {
+                                            _viewModel.changeStatus(selected.id, status);
                                           }
+                                        }
+                                      },
+                                      onSubmitClaim: (_) {},
+                                      onResolveClaim: (claimStatus, itemStatus) async {
+                                        final selected = _viewModel.selectedItem;
+                                        if (selected != null && await _ensureAuthenticated('Anda harus masuk untuk menyelesaikan klaim.')) {
+                                          _viewModel.resolveClaim(selected.id, claimStatus, itemStatus);
                                         }
                                       },
                                       onEdit: _openEditSheet,
@@ -313,9 +325,11 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
 
   Widget _buildBrowser({required bool isWide}) {
     return ItemBrowser(
-      showTypeFilters: isWide,
+      showTypeFilters: false,
       showSearchBar: isWide,
-      showStatusFilter: isWide,
+      showStatusFilter: false,
+      showCategoryFilter: false,
+      showPriorityFilter: false,
       showOuterBorder: isWide,
       items: _viewModel.filteredItems,
       selectedItem: _viewModel.selectedItem,
@@ -323,9 +337,13 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
       query: _viewModel.query,
       typeFilter: _viewModel.typeFilter,
       statusFilter: _viewModel.statusFilter,
+      categoryFilter: _viewModel.categoryFilter,
+      priorityFilter: _viewModel.priorityFilter,
       onQueryChanged: _viewModel.setQuery,
       onTypeChanged: _viewModel.setTypeFilter,
       onStatusChanged: _viewModel.setStatusFilter,
+      onCategoryChanged: _viewModel.setCategoryFilter,
+      onPriorityChanged: _viewModel.setPriorityFilter,
       onClearFilters: () {
         _viewModel.clearFilters();
         _searchController.clear();
@@ -338,34 +356,91 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
   void _openFilterSheet(BuildContext ctx) {
     showModalBottomSheet<void>(
       context: ctx,
+      isScrollControlled: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
                       const Expanded(
                         child: Text(
-                          'Filter Status',
+                          'Filter',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       TextButton(
                         onPressed: () {
                           _viewModel.setStatusFilter(null);
+                          _viewModel.setCategoryFilter(null);
+                          _viewModel.setPriorityFilter(null);
                           setSheetState(() {});
                         },
                         child: const Text('Reset'),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  ListenableBuilder(
+                    listenable: _viewModel,
+                    builder: (context, _) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Filter Status',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Semua'),
+                                selected: _viewModel.statusFilter == null,
+                                side: BorderSide.none,
+                                onSelected: (_) {
+                                  _viewModel.setStatusFilter(null);
+                                  setSheetState(() {});
+                                },
+                              ),
+                              for (final status in ItemStatus.values)
+                                ChoiceChip(
+                                  key: ValueKey('sheetFilter-${status.name}'),
+                                  label: Text(status.label),
+                                  selected: _viewModel.statusFilter == status,
+                                  side: BorderSide.none,
+                                  onSelected: (_) {
+                                    _viewModel.setStatusFilter(status);
+                                    setSheetState(() {});
+                                  },
+                                ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Kategori Barang',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   ListenableBuilder(
@@ -377,21 +452,61 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                         children: [
                           ChoiceChip(
                             label: const Text('Semua'),
-                            selected: _viewModel.statusFilter == null,
+                            selected: _viewModel.categoryFilter == null,
                             side: BorderSide.none,
                             onSelected: (_) {
-                              _viewModel.setStatusFilter(null);
+                              _viewModel.setCategoryFilter(null);
                               setSheetState(() {});
                             },
                           ),
-                          for (final status in ItemStatus.values)
+                          for (final category in ItemCategory.values)
                             ChoiceChip(
-                              key: ValueKey('sheetFilter-${status.name}'),
-                              label: Text(status.label),
-                              selected: _viewModel.statusFilter == status,
+                              key: ValueKey('sheetFilterCategory-${category.name}'),
+                              label: Text(category.label),
+                              selected: _viewModel.categoryFilter == category,
                               side: BorderSide.none,
                               onSelected: (_) {
-                                _viewModel.setStatusFilter(status);
+                                _viewModel.setCategoryFilter(category);
+                                setSheetState(() {});
+                              },
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Prioritas',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ListenableBuilder(
+                    listenable: _viewModel,
+                    builder: (context, _) {
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          ChoiceChip(
+                            label: const Text('Semua'),
+                            selected: _viewModel.priorityFilter == null,
+                            side: BorderSide.none,
+                            onSelected: (_) {
+                              _viewModel.setPriorityFilter(null);
+                              setSheetState(() {});
+                            },
+                          ),
+                          for (final priority in ItemPriority.values)
+                            ChoiceChip(
+                              key: ValueKey('sheetFilterPriority-${priority.name}'),
+                              label: Text(priority.label),
+                              selected: _viewModel.priorityFilter == priority,
+                              side: BorderSide.none,
+                              onSelected: (_) {
+                                _viewModel.setPriorityFilter(priority);
                                 setSheetState(() {});
                               },
                             ),
@@ -402,9 +517,10 @@ class _LostFoundHomePageState extends State<LostFoundHomePage> {
                   const SizedBox(height: 8),
                 ],
               ),
-            );
-          },
-        );
+            ),
+          );
+        },
+      );
       },
     );
   }
@@ -449,7 +565,22 @@ return FractionallySizedBox(
                    compact: true,
                    onStatusChanged: (status) async {
                      if (await _ensureAuthenticated('Anda harus masuk untuk mengubah status.')) {
-                       _viewModel.changeStatus(sheetItem.id, status);
+                       if (!context.mounted) return;
+                       if (status == ItemStatus.claimReview) {
+                         final claim = await showDialog<ClaimRecord>(
+                           context: context,
+                           builder: (context) => const ClaimDialog(),
+                         );
+                         if (claim != null) _viewModel.submitClaim(sheetItem.id, claim);
+                       } else {
+                         _viewModel.changeStatus(sheetItem.id, status);
+                       }
+                     }
+                   },
+                   onSubmitClaim: (_) {},
+                   onResolveClaim: (claimStatus, itemStatus) async {
+                     if (await _ensureAuthenticated('Anda harus masuk untuk menyelesaikan klaim.')) {
+                       _viewModel.resolveClaim(sheetItem.id, claimStatus, itemStatus);
                      }
                    },
                    onEdit: (editedItem) async {

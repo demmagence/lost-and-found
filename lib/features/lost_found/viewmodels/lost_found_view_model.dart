@@ -15,12 +15,16 @@ class LostFoundViewModel extends ChangeNotifier {
   String _query = '';
   ItemType? _typeFilter;
   ItemStatus? _statusFilter;
+  ItemCategory? _categoryFilter;
+  ItemPriority? _priorityFilter;
 
   List<LostFoundItem> get items => List.unmodifiable(_items);
   bool get isLoading => _isLoading;
   String get query => _query;
   ItemType? get typeFilter => _typeFilter;
   ItemStatus? get statusFilter => _statusFilter;
+  ItemCategory? get categoryFilter => _categoryFilter;
+  ItemPriority? get priorityFilter => _priorityFilter;
 
   LostFoundItem? get selectedItem {
     final selectedId = _selectedItemId;
@@ -49,7 +53,11 @@ class LostFoundViewModel extends ChangeNotifier {
       final matchesType = _typeFilter == null || item.type == _typeFilter;
       final matchesStatus =
           _statusFilter == null || item.status == _statusFilter;
-      return matchesQuery && matchesType && matchesStatus;
+      final matchesCategory =
+          _categoryFilter == null || item.category == _categoryFilter;
+      final matchesPriority =
+          _priorityFilter == null || item.priority == _priorityFilter;
+      return matchesQuery && matchesType && matchesStatus && matchesCategory && matchesPriority;
     }).toList();
   }
 
@@ -117,10 +125,24 @@ class LostFoundViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCategoryFilter(ItemCategory? category) {
+    _categoryFilter = category;
+    _syncSelection();
+    notifyListeners();
+  }
+
+  void setPriorityFilter(ItemPriority? priority) {
+    _priorityFilter = priority;
+    _syncSelection();
+    notifyListeners();
+  }
+
   void clearFilters() {
     _query = '';
     _typeFilter = null;
     _statusFilter = null;
+    _categoryFilter = null;
+    _priorityFilter = null;
     _syncSelection();
     notifyListeners();
   }
@@ -147,6 +169,56 @@ class LostFoundViewModel extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) {
         print('Error changing status: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
+  Future<LostFoundItem?> submitClaim(String itemId, ClaimRecord claim) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final updated = await repository.submitClaim(itemId, claim);
+      if (updated != null) {
+        _items = [
+          for (final current in _items)
+            if (current.id == updated.id) updated else current,
+        ];
+        _selectedItemId = updated.id;
+        _syncSelection();
+        return updated;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error submitting claim: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return null;
+  }
+
+  Future<LostFoundItem?> resolveClaim(String itemId, ClaimStatus claimStatus, ItemStatus itemStatus) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final updated = await repository.resolveClaim(itemId, claimStatus, itemStatus);
+      if (updated != null) {
+        _items = [
+          for (final current in _items)
+            if (current.id == updated.id) updated else current,
+        ];
+        _selectedItemId = updated.id;
+        _syncSelection();
+        return updated;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error resolving claim: $e');
       }
     } finally {
       _isLoading = false;

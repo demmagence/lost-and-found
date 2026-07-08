@@ -39,9 +39,7 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Color(0xFF04756F),
           ),
         );
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop(true); // Return success
-        }
+        // AuthWrapper will handle navigation automatically via onAuthStateChange
       }
     } on AuthException catch (e) {
       if (mounted) {
@@ -208,7 +206,7 @@ class _LoginPageState extends State<LoginPage> {
                         GestureDetector(
                           key: const ValueKey('goToRegisterButton'),
                           onTap: () {
-                            Navigator.of(context).pushReplacement(
+                            Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => const RegisterPage(),
                               ),

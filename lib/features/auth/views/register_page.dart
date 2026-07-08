@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,6 +10,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _displayNameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -20,6 +21,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void dispose() {
+    _displayNameController.dispose();
+    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -34,6 +37,10 @@ class _RegisterPageState extends State<RegisterPage> {
       final response = await Supabase.instance.client.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        data: {
+          'display_name': _displayNameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+        },
       );
 
       if (mounted) {
@@ -45,9 +52,7 @@ class _RegisterPageState extends State<RegisterPage> {
               backgroundColor: Color(0xFF04756F),
             ),
           );
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop(true); // Return success
-          }
+          // AuthWrapper will handle navigation automatically via onAuthStateChange
         } else {
           // If email confirmation is required by Supabase configuration
           ScaffoldMessenger.of(context).showSnackBar(
@@ -56,10 +61,8 @@ class _RegisterPageState extends State<RegisterPage> {
               backgroundColor: Color(0xFF04756F),
             ),
           );
-          // Navigate to Login
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-          );
+          // Navigate to Login by popping the RegisterPage
+          Navigator.of(context).pop();
         }
       }
     } on AuthException catch (e) {
@@ -139,6 +142,40 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    TextFormField(
+                      key: const ValueKey('registerDisplayNameField'),
+                      controller: _displayNameController,
+                      keyboardType: TextInputType.name,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Tampilan',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Nama wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      key: const ValueKey('registerPhoneField'),
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Nomor Telepon',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Nomor telepon wajib diisi';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       key: const ValueKey('registerEmailField'),
                       controller: _emailController,
@@ -257,11 +294,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         GestureDetector(
                           key: const ValueKey('goToLoginButton'),
                           onTap: () {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (_) => const LoginPage(),
-                              ),
-                            );
+                            Navigator.of(context).pop();
                           },
                           child: const Text(
                             'Masuk Di Sini',
